@@ -10,12 +10,121 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Sample {
+model Role {
+  id   Int    @id @default(autoincrement())
+  name String
+
+  // Define relation
+  Users User[]
+}
+
+model EventCategory {
+  id   Int    @id @default(autoincrement())
+  name String
+
+  // Define relation
+  Events Event[]
+}
+
+model TransactionStatus {
+  id   Int    @id @default(autoincrement())
+  name String
+
+  // Define relation
+  Transactions Transaction[]
+}
+
+model User {
   id        Int      @id @default(autoincrement())
+  username  String   @unique
+  email     String   @unique
+  password  String
   name      String
-  code      String   @unique
+  roleId    Int
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@map("samples") // if you want to use snake_case format
+  // Set foreign key
+  role Role @relation(fields: [roleId], references: [id])
+
+  // Define relation
+  Events       Event[]
+  Transactions Transaction[]
+  Reviews      Review[]
+}
+
+model Event {
+  id             Int      @id @default(autoincrement())
+  categoryId     Int
+  oraganizerId   Int
+  img            String?
+  name           String
+  isFree         Boolean
+  price          Float?
+  date           DateTime
+  startTime      DateTime @db.Time()
+  endTime        DateTime @db.Time()
+  location       String
+  description    String   @db.Text
+  availableSeats Int
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Set foreign key
+  category  EventCategory @relation(fields: [categoryId], references: [id])
+  organizer User          @relation(fields: [oraganizerId], references: [id])
+
+  // Define relation
+  Transactions Transaction[]
+  Promotions   Promotion[]
+  Reviews      Review[]
+}
+
+model Transaction {
+  id                  Int      @id @default(autoincrement())
+  userId              Int
+  eventId             Int
+  transactionStatusId Int
+  quantity            Int
+  totalPrice          Float
+  discountPrice       Float
+  finalPrice          Float
+  transactionDate     DateTime @default(now())
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  // Set foreign key
+  user              User              @relation(fields: [userId], references: [id])
+  event             Event             @relation(fields: [eventId], references: [id])
+  TransactionStatus TransactionStatus @relation(fields: [transactionStatusId], references: [id])
+}
+
+model Promotion {
+  id          Int      @id @default(autoincrement())
+  eventId     Int
+  name        String
+  description String
+  discount    Float
+  startDate   DateTime
+  endDate     DateTime
+  quantity    Int
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Set foreign key
+  event Event @relation(fields: [eventId], references: [id])
+}
+
+model Review {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  eventId   Int
+  rating    Int
+  comment   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Set foreign key
+  user  User  @relation(fields: [userId], references: [id])
+  event Event @relation(fields: [eventId], references: [id])
 }
