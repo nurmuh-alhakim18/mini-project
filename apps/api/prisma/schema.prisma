@@ -56,14 +56,14 @@ model User {
 model Event {
   id             Int      @id @default(autoincrement())
   categoryId     Int
-  oraganizerId   Int
+  organizerId    Int
   img            String?
   name           String
   isFree         Boolean
   price          Float?
   date           DateTime
-  startTime      DateTime @db.Time()
-  endTime        DateTime @db.Time()
+  startTime      String
+  endTime        String
   location       String
   description    String   @db.Text
   availableSeats Int
@@ -72,7 +72,7 @@ model Event {
 
   // Set foreign key
   category  EventCategory @relation(fields: [categoryId], references: [id])
-  organizer User          @relation(fields: [oraganizerId], references: [id])
+  organizer User          @relation(fields: [organizerId], references: [id])
 
   // Define relation
   Transactions Transaction[]

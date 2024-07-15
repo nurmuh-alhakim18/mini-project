@@ -155,6 +155,18 @@ async function main() {
       name: 'failed',
     },
   });
+
+  const firstAdmin = await prisma.user.upsert({
+    where: { id: 1 },
+    update: {},
+    create: {
+      username: 'manUtd',
+      email: 'manutd@gmail.com',
+      password: 'password',
+      name: 'Manchester United',
+      roleId: 2,
+    },
+  });
 }
 
 main()
