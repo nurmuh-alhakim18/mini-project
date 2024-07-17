@@ -167,6 +167,18 @@ async function main() {
       roleId: 2,
     },
   });
+
+  const firstUser = await prisma.user.upsert({
+    where: { id: 2 },
+    update: {},
+    create: {
+      username: 'johnDoe',
+      email: 'john@gmail.com',
+      password: 'password',
+      name: 'John Doe',
+      roleId: 1,
+    },
+  });
 }
 
 main()
