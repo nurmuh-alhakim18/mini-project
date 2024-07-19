@@ -18,6 +18,10 @@ export class TransactionRouter {
       this.transactionController.getTransaction,
     );
     this.router.post('/', this.transactionController.createTransaction);
+    this.router.post(
+      '/apply-promotion',
+      this.transactionController.applyPromotion,
+    );
   }
 
   getRouter(): Router {

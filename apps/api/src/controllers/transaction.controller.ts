@@ -2,6 +2,35 @@ import { Request, Response } from 'express';
 import prisma from '@/utils/db';
 
 export class TransactionController {
+  async applyPromotion(req: Request, res: Response) {
+    const { eventId, code } = req.body;
+
+    const promotion = await prisma.promotion.findUnique({
+      where: {
+        eventId,
+        code,
+        startDate: {
+          lte: new Date(),
+        },
+        endDate: {
+          gte: new Date(),
+        },
+      },
+    });
+
+    if (!promotion) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'Promotion not found',
+      });
+    }
+
+    return res.status(200).json({
+      status: 'success',
+      data: promotion,
+    });
+  }
+
   async getTransactions(req: Request, res: Response) {
     try {
       const { id } = req.params;
@@ -92,7 +121,8 @@ export class TransactionController {
           id: true,
           quantity: true,
           totalPrice: true,
-          discountPrice: true,
+          discountPercentage: true,
+          discountAmount: true,
           finalPrice: true,
           TransactionStatus: {
             select: {
@@ -136,9 +166,27 @@ export class TransactionController {
         eventId,
         quantity,
         totalPrice,
-        discountPrice,
+        discountCode,
+        discountPercentage,
+        discountAmount,
         finalPrice,
       } = req.body;
+
+      const eventDate = await prisma.event.findUnique({
+        where: {
+          id: eventId,
+        },
+        select: {
+          date: true,
+        },
+      });
+
+      if (new Date(eventDate?.date ?? '') < new Date()) {
+        return res.status(403).json({
+          status: 'error',
+          message: 'Event has passed',
+        });
+      }
 
       const userRole = await prisma.user.findUnique({
         where: {
@@ -156,16 +204,67 @@ export class TransactionController {
         });
       }
 
-      const newTransaction = await prisma.transaction.create({
-        data: {
-          userId,
-          eventId,
-          quantity,
-          totalPrice,
-          discountPrice,
-          finalPrice,
-          transactionStatusId: 1,
-        },
+      const [newTransaction] = await prisma.$transaction(async (prisma) => {
+        const newTransaction = await prisma.transaction.create({
+          data: {
+            userId,
+            eventId,
+            quantity,
+            totalPrice,
+            discountCode,
+            discountPercentage,
+            discountAmount,
+            finalPrice,
+            transactionStatusId: 1,
+          },
+        });
+
+        const event = await prisma.event.findUnique({
+          where: {
+            id: eventId,
+          },
+        });
+
+        if (
+          (event?.availableSeats ?? 0) < quantity ||
+          (event?.availableSeats ?? 0) === 0
+        ) {
+          throw new Error('Not enough available seats');
+        }
+
+        await prisma.event.update({
+          where: {
+            id: eventId,
+          },
+          data: {
+            availableSeats: {
+              decrement: quantity,
+            },
+          },
+        });
+
+        const discount = await prisma.promotion.findUnique({
+          where: {
+            code: discountCode,
+          },
+        });
+
+        if (discount && discount.quantity <= 0) {
+          throw new Error("Promotion code can't be used");
+        } else {
+          await prisma.promotion.update({
+            where: {
+              code: discountCode,
+            },
+            data: {
+              quantity: {
+                decrement: 1,
+              },
+            },
+          });
+        }
+
+        return [newTransaction];
       });
 
       return res.status(201).json({

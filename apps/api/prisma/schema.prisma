@@ -88,7 +88,9 @@ model Transaction {
   transactionStatusId Int
   quantity            Int
   totalPrice          Float
-  discountPrice       Float
+  discountCode        String?
+  discountPercentage  Int?
+  discountAmount      Float?
   finalPrice          Float
   transactionDate     DateTime @default(now())
   createdAt           DateTime @default(now())
@@ -101,16 +103,15 @@ model Transaction {
 }
 
 model Promotion {
-  id          Int      @id @default(autoincrement())
-  eventId     Int
-  name        String
-  description String
-  discount    Float
-  startDate   DateTime
-  endDate     DateTime
-  quantity    Int
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id                 Int      @id @default(autoincrement())
+  eventId            Int
+  code               String   @unique
+  discountPercentage Int
+  startDate          DateTime
+  endDate            DateTime
+  quantity           Int
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 
   // Set foreign key
   event Event @relation(fields: [eventId], references: [id])
